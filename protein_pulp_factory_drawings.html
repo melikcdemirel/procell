@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Protein pulp plant — factory drawings: original plan vs Alt A2 (resin)</title>
+<title>Protein pulp plant — factory drawings: original plan vs Alternative plan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&display=swap" rel="stylesheet">
@@ -73,7 +73,7 @@ button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid var(--
 <body>
 <div id="stage"></div>
 <div id="bar">
-  <h1>Protein pulp plant: original plan vs Alt A2 (resin)</h1>
+  <h1>Protein pulp plant: original plan vs Alternative plan</h1>
   <div class="lang">
     <label for="langRange">Lang factor</label>
     <input type="range" id="langRange" min="1" max="3.2" step="0.1" value="1">
@@ -84,7 +84,7 @@ button,input{font:inherit;color:inherit} :focus-visible{outline:2px solid var(--
 </div>
 <div class="tag" id="tagL"></div><div class="tag" id="tagR"></div><div id="divider"></div>
 <div id="areasBox"><button id="areasBtn" aria-expanded="false"><span>CAPEX by area</span><span id="areasHint">Show</span></button>
-  <div id="areasBody" hidden><table><thead><tr><th>Area</th><th>Original</th><th>Alt A2 (resin)</th><th>Change</th></tr></thead><tbody id="areasTb"></tbody></table></div></div>
+  <div id="areasBody" hidden><table><thead><tr><th>Area</th><th>Original</th><th>Alternative plan</th><th>Change</th></tr></thead><tbody id="areasTb"></tbody></table></div></div>
 <div id="card" hidden role="dialog" aria-live="polite"><button class="close" aria-label="Close details">×</button><div class="tl" id="cTag"></div><h3 id="cName"></h3><dl id="cDl"></dl></div>
 <div id="tip" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -99,7 +99,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 let LANG=1;
 const PLANS=[
   {key:'base', name:'Original plan', desc:'Disc stack centrifuges, flash dryer to ~8% moisture', items:CASEDATA.base},
-  {key:'A2', name:'Alt A2 (resin)', desc:'One extraction stage, chelating resin columns, water recycle, screw press, small rotary dryer', items:CASEDATA.A2},
+  {key:'A2', name:'Alternative plan', desc:'One extraction stage, chelating resin columns, water recycle, screw press, small rotary dryer', items:CASEDATA.A2},
 ];
 PLANS.forEach(pl=>{ pl.byId={}; pl.groups={}; pl.structure=[];
   pl.items.forEach(d=>{ d.id=d.no||'LAB'; d.tag=(d.type&&d.type!=='None'?d.type+'-':'')+(d.no||'LAB'); d.p=num(d.price); d.incl=d.price==='incl'; pl.byId[d.id]=d; });
@@ -334,7 +334,7 @@ function buildResinPlant(){
   P(1184,(a,b)=>{const g=new THREE.Group(); run(g,[[36,10.3,-34],[36,10.3,-20]],.7,a); run(g,[[36,10.3,-27],[45,10.3,-27],[51,21,-24]],.7,a); return g;},0,0);
   [[1420,-12],[1430,-24]].forEach(([t,z])=>P(t,(a,b)=>{const g=vtank(a,b,8,8,{cone:5,legs:6}); const s=add(g,C(.6,5,12),b,2.5,3.2,0); s.rotation.z=Math.PI/2;
      if(t===1420) run(g,[[0,21,-1],[0,21,-12]],.6,b); return g;},52,z));
-  // ---- screw press + small rotary dryer (same equipment as Alt A2, moved 32 ft west) ----
+  // ---- screw press + small rotary dryer (same equipment as before, moved 32 ft west) ----
   OX=-32; buildSmallRotaryNC(); OX=0;
   P(1516,(a,b)=>{const g=new THREE.Group(); run(g,[[108,3,-30],[111,3,-30],[111,40,-30],[111,40,4],[99,40,4],[99,40,10],[99,37.5,10]],.5,a);
     run(g,[[111,40,4],[111,40,10],[111,37.5,10]],.5,a); add(g,B(3,2.4,2.2),b,111,1.2,-22); return g;},0,0);
