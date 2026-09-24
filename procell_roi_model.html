@@ -81,7 +81,7 @@
 <body>
 <div class="wrap">
   <h1>ProCell Fiber — Interactive ROI Model</h1>
-  <p class="sub" style="margin-bottom:8px"><b>Now linked to the protein pulp (DSP) plant estimate.</b> DSP capital can come from the study model, the original equipment list, or Alt A2 (basket centrifuges, screw press, small gas rotary dryer), priced as purchased equipment × Lang factor and scaled from the equipment list's 2,330 t/yr design capacity with the six-tenths rule.</p>
+  <p class="sub" style="margin-bottom:8px"><b>Now linked to the protein pulp (DSP) plant estimate.</b> DSP capital can come from the study model, the original equipment list, or Alt A2 (resin): one extraction stage with chelating resin columns and water recycle, basket centrifuges, screw press and a small gas rotary dryer, priced as purchased equipment × Lang factor and scaled from the equipment list's 2,330 t/yr design capacity with the six-tenths rule.</p>
   <p class="sub">Full process (DSP + fiber spinning). Feedstock is set by <b>trucks/day of spent yeast</b> → sets plant scale; second input is <b>fiber selling price</b>. ROI is shown as <b>years to recover the capital</b> (fixed capital ÷ annual EBITDA). Based on the Tandem Repeat / Burk TechnoEconomics study-level model (v2.00).</p>
 
 
@@ -95,7 +95,7 @@
         <div class="seg">
           <button type="button" class="segbtn" data-basis="study">Study model</button>
           <button type="button" class="segbtn" data-basis="base">Original plan</button>
-          <button type="button" class="segbtn active dspb" data-basis="A2">Alt A2</button>
+          <button type="button" class="segbtn active dspb" data-basis="A2">Alt A2 (resin)</button>
         </div>
       </div>
 
@@ -155,6 +155,7 @@
           <div class="asmhdr">Protein pulp plant (DSP) link</div>
           <div><label>Equipment-list design capacity (t/yr fiber)</label><input type="number" id="a_dcap" value="2330" step="10"></div>
           <div><label>Alt A2 dryer gas saving at design (MM/yr)</label><input type="number" id="a_gsave" value="0.25" step="0.01"></div>
+          <div><label>Alt A2 EDTA / water saving at design (MM/yr)</label><input type="number" id="a_csave" value="0" step="0.05"></div>
           <div class="asmhdr">Process &amp; economics</div>
           <div><label>Base fiber output (t/yr)</label><input type="number" id="a_fiber" value="6750"></div>
           <div><label>Base yeast fed (t/yr)</label><input type="number" id="a_bio" value="5700.1"></div>
@@ -193,7 +194,7 @@
       <div class="card" style="margin-bottom:16px">
         <h2>DSP capital basis — side-by-side</h2>
         <div style="overflow-x:auto"><table class="cmp" id="cmp"></table></div>
-        <p style="font-size:11px;color:var(--sub);margin:9px 0 0;line-height:1.6">Same trucks/day, fiber price, OpEx and spinning route in every column; only the DSP capital changes (plus the Alt A2 dryer gas saving). The outlined column drives the KPIs, charts and sensitivity grid. At Lang 1.0 the plant estimates are purchased equipment only, so they understate installed capital; the study model's $28.2MM is a fully factored DSP estimate.</p>
+        <p style="font-size:11px;color:var(--sub);margin:9px 0 0;line-height:1.6">Same trucks/day, fiber price, OpEx and spinning route in every column; only the DSP capital changes (plus the Alt A2 dryer gas saving and any EDTA / water saving you enter under Assumptions). The outlined column drives the KPIs, charts and sensitivity grid. At Lang 1.0 the plant estimates are purchased equipment only, so they understate installed capital; the study model's $28.2MM is a fully factored DSP estimate.</p>
       </div>
       <div class="charts">
         <div class="card">
@@ -268,9 +269,9 @@
 var LANG=1;
 // Equipment lists for the DSP (protein pulp) plant, $k purchased equipment
 window.P3D=(function(){
-const AREAS = {100:['Chemicals and Treatment A','#2a9d8f'],200:['Treatment B','#3d6fb6'],300:['Heat reclaim and Treatment C','#7d5cba'],400:['Dryer feed, solubles, CIP','#cf8a1c'],
+const AREAS = {100:['Chemicals and extraction (Treatment A)','#2a9d8f'],150:['Resin columns and water recycle','#b5487a'],200:['Treatment B','#3d6fb6'],300:['Heat reclaim and Treatment C','#7d5cba'],400:['Dryer feed, solubles, CIP','#cf8a1c'],
   500:['Drying','#c8553d'],600:['Product storage and packaging','#4f9a3a'],700:['Future','#8b9096'],900:['Utilities and wastewater','#5b6b7c'],950:['Laboratory','#9a6b4a']};
-return {eq:{"base": 8647, "A2": 8107},areas:{"base": {"100": 1847, "200": 1260, "300": 1340, "400": 500, "500": 1320, "600": 1060, "900": 920, "950": 400}, "A2": {"100": 1812, "200": 1225, "300": 1305, "400": 695, "500": 690, "600": 1060, "900": 920, "950": 400}},AREAS,refreshCard:()=>{}};
+return {eq:{"base": 8647, "A2": 5982},areas:{"base": {"100": 1847, "200": 1260, "300": 1340, "400": 500, "500": 1320, "600": 1060, "900": 920, "950": 400}, "A2": {"100": 1687, "150": 655, "300": 80, "400": 590, "500": 690, "600": 1060, "900": 820, "950": 400}},AREAS,refreshCard:()=>{}};
 })();
 </script>
 <script>
@@ -288,7 +289,7 @@ function asm(){
     dspFci:+$('a_dspfci').value*1e6, spinFci:+$('a_spinfci').value*1e6, baseFci:(+$('a_dspfci').value + +$('a_spinfci').value)*1e6,
     capExp:+$('a_capexp').value, fixExp:+$('a_fixexp').value, ycost:+$('a_ycost').value,
     disc:+$('a_disc').value/100, yrs:+$('a_yrs').value, ship:+$('a_ship').value/100,
-    dcap:Math.max(1,+$('a_dcap').value), gsave:+$('a_gsave').value*1e6
+    dcap:Math.max(1,+$('a_dcap').value), gsave:+$('a_gsave').value*1e6, csave:+$('a_csave').value*1e6
   };
 }
 function perTruckDry(a){ return a.gal*a.lpg*a.dens*a.sol/1000; }        // t dry / truck
@@ -304,7 +305,7 @@ function calc(yeastAmt, fiberP, basis){
   const sf=Math.pow(S,a.capExp), ff=Math.pow(S,a.fixExp);
   const dsf=Math.pow(fiberOut/a.dcap,a.capExp);                 // scale from equipment-list design capacity
   const dspCap= basis==='study' ? a.dspFci*sf : P3D.eq[basis]*1000*LANG*dsf;
-  const gasSave= basis==='A2' ? a.gsave*fiberOut/a.dcap : 0;     // smaller dryer, less evaporation
+  const gasSave= basis==='A2' ? (a.gsave+a.csave)*fiberOut/a.dcap : 0;     // smaller dryer, less evaporation
   const dspOp = a.dspVar*S + yeastAmt*a.ycost*(1+a.ship) + a.dspFix*ff - gasSave;
   let spinCap, spinOp, contractFee=0;
   if(a.contract){                       // contract manufacturer: no spinning factory
@@ -386,7 +387,7 @@ function render(){
   buildGrid(trucks,fiberP);
   renderLink(yeast,fiberP,r);
 }
-const BN={study:'Study model DSP',base:'Original plan',A2:'Alt A2'};
+const BN={study:'Study model DSP',base:'Original plan',A2:'Alt A2 (resin)'};
 function renderLink(yeast,fiberP,r){
   const a=asm();
   $('lv').innerHTML=LANG.toFixed(1)+'&times;';
@@ -400,7 +401,7 @@ function renderLink(yeast,fiberP,r){
     +row('DSP capital (MM)',(x,k)=>'$'+fmtM(x.dspCap)+(k==='study'?'':' <span style="color:var(--sub)">@ Lang '+LANG.toFixed(1)+'</span>'))
     +row('Spinning capital (MM)',x=>'$'+fmtM(x.spinCap))
     +row('Fixed capital (MM)',x=>'$'+fmtM(x.fci))
-    +row('Annual OpEx (MM/yr)',x=>'$'+fmtM(x.opex)+(x.gasSave?' <span style="color:var(--good)">(−$'+(x.gasSave/1e6).toFixed(2)+' gas)</span>':''))
+    +row('Annual OpEx (MM/yr)',x=>'$'+fmtM(x.opex)+(x.gasSave?' <span style="color:var(--good)">(−$'+(x.gasSave/1e6).toFixed(2)+' savings)</span>':''))
     +row('Annual EBITDA (MM/yr)',x=>'<span class="'+(x.ebitda>=0?'pos':'neg')+'">$'+fmtM(x.ebitda)+'</span>')
     +row('ROI — years to recover',yr,'hl')
     +row('Project IRR',x=>isNaN(x.irr)?'—':(x.irr*100).toFixed(1)+'%')
@@ -409,7 +410,7 @@ function renderLink(yeast,fiberP,r){
   const scale=r.dsf;
   // area table
   const areas=P3D.areas;
-  let h='<tr><th>DSP capital by area (MM, at current scale, Lang '+LANG.toFixed(1)+')</th><th>Original plan</th><th>Alt A2</th><th>Change</th></tr>';
+  let h='<tr><th>DSP capital by area (MM, at current scale, Lang '+LANG.toFixed(1)+')</th><th>Original plan</th><th>Alt A2 (resin)</th><th>Change</th></tr>';
   let t0=0,t1=0;
   for(const [k,[n,col]] of Object.entries(P3D.AREAS)){ if(k==='700') continue; const v0=(areas.base[k]||0)*1000*LANG*scale, v1=(areas.A2[k]||0)*1000*LANG*scale; t0+=v0; t1+=v1; const d=v1-v0;
     h+='<tr><td class="hd"><span class="sw3" style="background:'+col+'"></span>'+k+' '+n+'</td><td>$'+(v0/1e6).toFixed(2)+'</td><td>$'+(v1/1e6).toFixed(2)+'</td><td class="'+(Math.abs(d)<500?'':(d<0?'pos':'neg'))+'">'+(Math.abs(d)<500?'—':(d>0?'+':'−')+'$'+Math.abs(d/1e6).toFixed(2))+'</td></tr>'; }
@@ -509,7 +510,7 @@ function drawCapCats(id, S){
     rows=CAPCATS.map(d=>{ const dsp=d[1]*sf; const spin=a.contract?0:d[2]*sf; return [d[0], dsp+spin, d[3]]; }).filter(r=>r[1]>0.001);
   } else {
     const fo=a.baseFiber*S, dsf=Math.pow(fo/a.dcap,a.capExp);
-    rows=Object.entries(P3D.AREAS).filter(([k])=>k!=='700').map(([k,[n,col]])=>[k+' '+n.replace('Chemicals and ','Chem + ').replace('Heat reclaim and ','Reclaim + ').replace('Product storage and packaging','Storage + packaging').replace('Utilities and wastewater','Utilities + WW').replace('Dryer feed, solubles, CIP','Dryer feed + CIP'), (P3D.areas[BASIS][k]||0)*LANG*dsf/1000, col])
+    rows=Object.entries(P3D.AREAS).filter(([k])=>k!=='700').map(([k,[n,col]])=>[k+' '+n.replace('Chemicals and extraction (Treatment A)','Chem + extraction').replace('Resin columns and water recycle','Resin + recycle').replace('Heat reclaim and ','Reclaim + ').replace('Product storage and packaging','Storage + packaging').replace('Utilities and wastewater','Utilities + WW').replace('Dryer feed, solubles, CIP','Dryer feed + CIP'), (P3D.areas[BASIS][k]||0)*LANG*dsf/1000, col])
       .filter(r=>r[1]>0.0005);
     if(!a.contract) rows.push(['Spinning plant (lump)', 30.992*sf*(+$('a_spinfci').value/30.992), '#fb923c']);
   }
@@ -596,7 +597,7 @@ $('yeastN').addEventListener('input',()=>{
   const t=yeastToTrucks(+$('yeastN').value, asm());
   $('trucks').value=t.toFixed(1); $('trucksN').value=t.toFixed(1); render();
 });
-['a_gal','a_sol','a_dens','a_lpg','a_dw','a_wk','a_fiber','a_bio','a_dspvar','a_dspfix','a_spinvar','a_spinfix','a_dspfci','a_spinfci','a_capexp','a_fixexp','a_ycost','a_disc','a_yrs','a_ship','a_contract','a_audusd','a_dcap','a_gsave'].forEach(id=>$(id).addEventListener('input',render));
+['a_gal','a_sol','a_dens','a_lpg','a_dw','a_wk','a_fiber','a_bio','a_dspvar','a_dspfix','a_spinvar','a_spinfix','a_dspfci','a_spinfci','a_capexp','a_fixexp','a_ycost','a_disc','a_yrs','a_ship','a_contract','a_audusd','a_dcap','a_gsave','a_csave'].forEach(id=>$(id).addEventListener('input',render));
 render();
 </script>
 </body>
