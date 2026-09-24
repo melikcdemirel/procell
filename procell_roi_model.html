@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProCell Fiber — Interactive ROI Model</title>
+<style>
+  :root{
+    --bg:#0f1720; --panel:#16212e; --panel2:#1c2a3a; --line:#2a3b4f;
+    --ink:#e8eef5; --sub:#93a6bb; --accent:#38bdf8; --accent2:#22d3a6;
+    --warn:#f4a742; --bad:#f0605f; --good:#37d39b; --chip:#22344a; --truck:#c084fc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:linear-gradient(160deg,#0d141c,#0f1c28);color:var(--ink);padding:22px;line-height:1.45}
+  h1{font-size:22px;margin:0 0 2px} h2{font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--sub);margin:0 0 12px;font-weight:600}
+  .sub{color:var(--sub);font-size:13px;margin:0 0 20px}
+  .wrap{max-width:1180px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:18px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .ctrl{margin-bottom:18px}
+  .ctrl:last-child{margin-bottom:0}
+  .lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+  .lab span:first-child{font-size:13px;color:var(--ink);font-weight:600}
+  .val{font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;color:var(--truck)}
+  .val.fiber{color:var(--accent2)}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:6px;background:var(--chip);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+        background:var(--truck);cursor:pointer;border:3px solid #0d141c;box-shadow:0 0 0 1px var(--truck)}
+  input[type=range].fiber::-webkit-slider-thumb{background:var(--accent2);box-shadow:0 0 0 1px var(--accent2)}
+  .numrow{display:flex;gap:8px;margin-top:8px;align-items:center}
+  .numrow input{width:120px;background:#0d1620;border:1px solid var(--line);color:var(--ink);
+        border-radius:8px;padding:6px 9px;font-size:13px;font-variant-numeric:tabular-nums}
+  .numrow small{color:var(--sub);font-size:11px}
+  .seg{display:flex;gap:6px;background:#0d1620;border:1px solid var(--line);border-radius:9px;padding:4px}
+  .segbtn{flex:1;background:transparent;border:none;color:var(--sub);font-size:12.5px;font-weight:600;padding:7px 6px;border-radius:6px;cursor:pointer}
+  .segbtn.active{background:var(--truck);color:#1a1030}
+  .derived{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:16px;
+           display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .derived div{font-size:11.5px;color:var(--sub)} .derived b{display:block;font-size:15px;color:var(--ink);font-weight:800}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .kpi .t{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+  .kpi .n{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .kpi .u{font-size:11px;color:var(--sub);margin-top:2px}
+  .pos{color:var(--good)} .neg{color:var(--bad)} .neu{color:var(--accent)}
+  .verdict{border-radius:12px;padding:12px 15px;margin-bottom:16px;font-size:14px;font-weight:600;border:1px solid}
+  .verdict.g{background:rgba(55,211,155,.10);border-color:rgba(55,211,155,.4);color:#8bf0cd}
+  .verdict.w{background:rgba(244,167,66,.10);border-color:rgba(244,167,66,.4);color:#f6c583}
+  .verdict.b{background:rgba(240,96,95,.10);border-color:rgba(240,96,95,.4);color:#f6a1a0}
+  canvas{width:100%;display:block}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  @media(max-width:760px){.charts{grid-template-columns:1fr}}
+  table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:center}
+  th{background:var(--panel2);color:var(--sub);font-weight:600}
+  td.hd{background:var(--panel2);color:var(--sub);font-weight:700}
+  .cellcur{outline:2px solid var(--truck);outline-offset:-2px;font-weight:800}
+  details{margin-top:2px}
+  summary{cursor:pointer;font-size:13px;color:var(--sub);font-weight:600;padding:4px 0}
+  .asm{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .asm label{font-size:11px;color:var(--sub);display:block;margin-bottom:3px}
+  .asm input{width:100%;background:#0d1620;border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:5px 8px;font-size:12px}
+  .asmhdr{grid-column:1/3;font-size:11px;color:var(--truck);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
+  .foot{color:var(--sub);font-size:11.5px;margin-top:14px;line-height:1.6}
+  .legend{display:flex;gap:14px;font-size:11.5px;color:var(--sub);margin:6px 0 2px;flex-wrap:wrap}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+  .val.lang{color:#fbbf24}
+  input[type=range].lang::-webkit-slider-thumb{background:#fbbf24;box-shadow:0 0 0 1px #fbbf24}
+  .segbtn.active.dspb{background:#fbbf24;color:#1f1400}
+  .cmp td:first-child,.cmp th:first-child{text-align:left}
+  .cmp td.sel{outline:2px solid #fbbf24;outline-offset:-2px}
+  .cmp tr.hl td{font-weight:800}
+  .areas3 td:first-child,.areas3 th:first-child{text-align:left}
+  .sw3{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ProCell Fiber — Interactive ROI Model</h1>
+  <p class="sub" style="margin-bottom:8px"><b>Now linked to the protein pulp (DSP) plant estimate.</b> DSP capital can come from the study model, the original equipment list, or Alt A2 (basket centrifuges, screw press, small gas rotary dryer), priced as purchased equipment × Lang factor and scaled from the equipment list's 2,330 t/yr design capacity with the six-tenths rule.</p>
+  <p class="sub">Full process (DSP + fiber spinning). Feedstock is set by <b>trucks/day of spent yeast</b> → sets plant scale; second input is <b>fiber selling price</b>. ROI is shown as <b>years to recover the capital</b> (fixed capital ÷ annual EBITDA). Based on the Tandem Repeat / Burk TechnoEconomics study-level model (v2.00).</p>
+
+
+  <div class="grid">
+    <!-- INPUTS -->
+    <div class="card">
+      <h2>Inputs</h2>
+
+      <div class="ctrl">
+        <div class="lab"><span>DSP capital basis</span></div>
+        <div class="seg">
+          <button type="button" class="segbtn" data-basis="study">Study model</button>
+          <button type="button" class="segbtn" data-basis="base">Original plan</button>
+          <button type="button" class="segbtn active dspb" data-basis="A2">Alt A2</button>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <div class="lab"><span>Lang factor (DSP plant)</span><span class="val lang" id="lv">1.0&times;</span></div>
+        <input type="range" class="lang" id="lang" min="1" max="3.2" step="0.1" value="1">
+        <div class="numrow"><input type="number" id="langN" min="1" max="3.2" step="0.1" value="1.0"><small>1.0 = purchased equipment only &nbsp;·&nbsp; 3.2 = sheet value</small></div>
+        <div id="dspnote" style="font-size:11.5px;color:var(--sub);margin-top:6px"></div>
+      </div>
+
+      <div class="ctrl">
+        <div class="lab"><span>Spinning route</span></div>
+        <div class="seg">
+          <button type="button" id="modeIn" class="segbtn active">In-house factory</button>
+          <button type="button" id="modeCo" class="segbtn">Contract mfg</button>
+        </div>
+        <div id="contractBox" style="display:none;margin-top:9px">
+          <div class="numrow"><input type="number" id="a_contract" value="3.5" step="0.1"><small>$ / kg fiber — toll price (no spinning factory)</small></div>
+          <div id="cfee" style="font-size:11.5px;color:var(--sub);margin-top:6px"></div>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <div class="lab"><span>Spent yeast delivered</span><span class="val" id="tv">8.6 trucks/day</span></div>
+        <input type="range" id="trucks" min="1" max="24" step="0.1" value="8.6">
+        <div class="numrow"><input type="number" id="trucksN" min="0.1" step="0.1" value="8.6"><small>trucks / day &nbsp;·&nbsp; 5,000 gal wet, 10% solids</small></div>
+      </div>
+
+      <div class="ctrl">
+        <div class="lab"><span>&#8627; Yeast amount (dry)</span><span class="val" id="yv" style="font-size:14px">5,697 t/yr</span></div>
+        <div class="numrow"><input type="number" id="yeastN" min="100" step="50" value="5697"><small>dry t/yr — edit to back-solve trucks/day</small></div>
+      </div>
+
+      <div class="ctrl">
+        <div class="lab"><span>Fiber selling price</span><span class="val fiber" id="fv">$6,000 /t</span></div>
+        <input type="range" class="fiber" id="fiber" min="2000" max="12000" step="50" value="6000">
+        <div class="numrow"><input type="number" id="fiberN" min="0" step="50" value="6000"><small>USD / tonne fiber (dry)</small></div>
+      </div>
+
+      <div class="derived">
+        <div>Per truck<b id="d_pertruck">1.89 t dry</b></div>
+        <div>Plant scale<b id="d_scale">1.00&times;</b></div>
+        <div>Fiber output<b id="d_out">6,746 t/yr</b></div>
+        <div>Break-even<b style="color:var(--warn)" id="berk">$4,094 /t</b></div>
+      </div>
+
+      <details>
+        <summary>Assumptions (editable)</summary>
+        <div class="asm">
+          <div class="asmhdr">Truck → yeast conversion</div>
+          <div><label>Gallons per truck (wet)</label><input type="number" id="a_gal" value="5000"></div>
+          <div><label>Dry solids (%)</label><input type="number" id="a_sol" value="10" step="1"></div>
+          <div><label>Slurry density (kg/L)</label><input type="number" id="a_dens" value="1.0" step="0.01"></div>
+          <div><label>Liters per gallon</label><input type="number" id="a_lpg" value="3.78541" step="0.0001"></div>
+          <div><label>Delivery days / week</label><input type="number" id="a_dw" value="7" step="1"></div>
+          <div><label>Delivery weeks / year</label><input type="number" id="a_wk" value="50" step="1"></div>
+          <div class="asmhdr">Protein pulp plant (DSP) link</div>
+          <div><label>Equipment-list design capacity (t/yr fiber)</label><input type="number" id="a_dcap" value="2330" step="10"></div>
+          <div><label>Alt A2 dryer gas saving at design (MM/yr)</label><input type="number" id="a_gsave" value="0.25" step="0.01"></div>
+          <div class="asmhdr">Process &amp; economics</div>
+          <div><label>Base fiber output (t/yr)</label><input type="number" id="a_fiber" value="6750"></div>
+          <div><label>Base yeast fed (t/yr)</label><input type="number" id="a_bio" value="5700.1"></div>
+          <div><label>DSP variable OpEx (MM/yr)</label><input type="number" id="a_dspvar" value="2.0976" step="0.01"></div>
+          <div><label>DSP fixed OpEx (MM/yr)</label><input type="number" id="a_dspfix" value="2.2076" step="0.01"></div>
+          <div><label>Spinning variable OpEx (MM/yr)</label><input type="number" id="a_spinvar" value="12.7019" step="0.01"></div>
+          <div><label>Spinning fixed OpEx (MM/yr)</label><input type="number" id="a_spinfix" value="3.6756" step="0.01"></div>
+          <div><label>DSP base capital (MM)</label><input type="number" id="a_dspfci" value="28.2201" step="0.01"></div>
+          <div><label>Spinning base capital (MM)</label><input type="number" id="a_spinfci" value="30.9920" step="0.01"></div>
+          <div><label>Capital scale exponent</label><input type="number" id="a_capexp" value="0.6" step="0.05"></div>
+          <div><label>Fixed-OpEx scale exponent</label><input type="number" id="a_fixexp" value="0.6" step="0.05"></div>
+          <div><label>Yeast unit cost ($/t, opt.)</label><input type="number" id="a_ycost" value="0" step="10"></div>
+          <div><label>Discount rate (%)</label><input type="number" id="a_disc" value="10" step="0.5"></div>
+          <div><label>Capital recovery (yr)</label><input type="number" id="a_yrs" value="20" step="1"></div>
+          <div><label>Raw-material shipping (%)</label><input type="number" id="a_ship" value="10" step="1"></div>
+          <div><label>AUD/USD rate (wool)</label><input type="number" id="a_audusd" value="0.6988" step="0.001"></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div id="verdict" class="verdict g">—</div>
+      <div class="kpis">
+        <div class="kpi"><div class="t">ROI — years to recover</div><div class="n" id="k_roi">—</div><div class="u">fixed capital ÷ annual EBITDA</div></div>
+        <div class="kpi"><div class="t">Levelized cost</div><div class="n neu" id="k_lev">—</div><div class="u">USD/t fiber (break-even)</div></div>
+        <div class="kpi"><div class="t">Project IRR</div><div class="n" id="k_irr">—</div><div class="u">20-yr, pre-tax</div></div>
+        <div class="kpi"><div class="t">NPV (20 yr @ disc.)</div><div class="n" id="k_npv">—</div><div class="u">MM USD</div></div>
+        <div class="kpi"><div class="t">Annual revenue</div><div class="n neu" id="k_rev">—</div><div class="u">MM USD/yr</div></div>
+        <div class="kpi"><div class="t">Annual OpEx</div><div class="n neu" id="k_opex">—</div><div class="u">MM USD/yr</div></div>
+        <div class="kpi"><div class="t">Annual EBITDA</div><div class="n" id="k_ebitda">—</div><div class="u">MM USD/yr</div></div>
+        <div class="kpi"><div class="t">Fixed capital</div><div class="n neu" id="k_fci">—</div><div class="u">MM USD (scaled)</div></div>
+      </div>
+
+
+      <div class="card" style="margin-bottom:16px">
+        <h2>DSP capital basis — side-by-side</h2>
+        <div style="overflow-x:auto"><table class="cmp" id="cmp"></table></div>
+        <p style="font-size:11px;color:var(--sub);margin:9px 0 0;line-height:1.6">Same trucks/day, fiber price, OpEx and spinning route in every column; only the DSP capital changes (plus the Alt A2 dryer gas saving). The outlined column drives the KPIs, charts and sensitivity grid. At Lang 1.0 the plant estimates are purchased equipment only, so they understate installed capital; the study model's $28.2MM is a fully factored DSP estimate.</p>
+      </div>
+      <div class="charts">
+        <div class="card">
+          <h2>ROI (years) vs fiber price</h2>
+          <div class="legend">
+            <span><span class="dot" style="background:var(--accent2)"></span>years to recover</span>
+            <span><span class="dot" style="background:var(--warn)"></span>break-even</span>
+            <span><span class="dot" style="background:var(--accent)"></span>current</span>
+          </div>
+          <canvas id="chartF" width="420" height="260"></canvas>
+        </div>
+        <div class="card">
+          <h2>ROI (years) vs trucks/day</h2>
+          <div class="legend">
+            <span><span class="dot" style="background:var(--accent2)"></span>years to recover</span>
+            <span><span class="dot" style="background:var(--accent)"></span>current</span>
+          </div>
+          <canvas id="chartT" width="420" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h2>Capital cost breakdown</h2>
+        <div class="charts">
+          <div>
+            <div style="font-size:12px;color:var(--ink);font-weight:600;margin-bottom:8px" id="catTitle">By cost category — total plant (at current scale)</div>
+            <canvas id="chartCat" width="440" height="330"></canvas>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--ink);font-weight:600;margin-bottom:6px">DSP vs fiber-spinning vs yeast input</div>
+            <div class="legend">
+              <span><span class="dot" style="background:#38bdf8"></span>DSP <b id="lg_dsp" style="color:#cfe8f7"></b></span>
+              <span><span class="dot" style="background:#fb923c"></span>Spinning <b id="lg_spin" style="color:#f7dcc0"></b></span>
+              <span><span class="dot" style="background:#8b9bb0"></span>Total <b id="lg_tot" style="color:#d6dde6"></b></span>
+            </div>
+            <canvas id="chartC" width="440" height="262"></canvas>
+          </div>
+        </div>
+        <p id="capNote" style="font-size:11px;color:var(--sub);margin:10px 0 0;line-height:1.6"></p>
+        <div style="overflow-x:auto;margin-top:12px"><table class="areas3" id="areas3"></table></div>
+      </div>
+
+      <div class="card">
+        <h2>Sensitivity — ROI (years to recover)</h2>
+        <div style="overflow-x:auto"><table id="grid"></table></div>
+        <p style="font-size:11px;color:var(--sub);margin:9px 0 0">Rows = trucks/day (with dry t/yr), columns = fiber price (USD/t). Values = years to recover capital. Highlighted cell &asymp; your current inputs. Green &le; 6 yr, amber 6&ndash;12 yr, red &gt; 12 yr or loss.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Wool price benchmark (AWEX EMI) — fiber selling-price context</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:#e6b800"></span>Wool (USD/t)</span>
+      <span><span class="dot" style="background:#38bdf8"></span>your fiber price</span>
+      <span><span class="dot" style="background:#fb923c"></span>contract toll ($/kg)</span>
+    </div>
+    <canvas id="chartW" width="860" height="280"></canvas>
+    <p id="wool_cap" style="font-size:11px;color:var(--sub);margin:9px 0 0"></p>
+  </div>
+
+  <p class="foot">
+    <b>Reading ROI as years.</b> ROI (years to recover) = fixed capital &divide; annual EBITDA — how many years of operating cash flow it takes to earn back the capital. Fewer years is better; a loss-making price never recovers. At the model's break-even fiber price the recovery is ~8.5 years (1 &divide; capital-recovery factor), consistent with the 20-yr / 10% basis.<br>
+    <b>Feedstock chain.</b> Yeast (dry t/yr) = trucks/day &times; days/week &times; weeks/year &times; gallons &times; L/gal &times; density &times; solids%. At the defaults, one truck = 5,000 gal &times; 3.785 L/gal &times; 1.0 kg/L &times; 10% = <b>1.89 t dry</b>; over 350 delivery days ≈ 662 t/yr per truck/day, so 8.6 trucks/day ≈ the base 5,700 t/yr.<br>
+    <b>Economics.</b> Fiber is the only saleable product (DSP protein powder is an internal intermediate). Plant scale S = yeast &divide; base; fiber output = 6,750 &times; S; revenue = price &times; output. Variable OpEx scales &times;S; fixed OpEx and fixed capital scale &times;S<sup>0.6</sup> (six-tenths rule). EBITDA = revenue &minus; OpEx. Bigger scale lowers per-tonne cost, so recovery gets faster as trucks/day rises.<br>
+    <b>Notes:</b> the source workbook is a single-point estimate at 6,750 t/yr; the 0.6 scaling exponents and truck-conversion factors are added here (all editable). Spent yeast is treated as a $0 waste stream by default. Excludes income tax, depreciation shields, incentives, product shipping, sales/G&amp;A/R&amp;D. Study-level accuracy ≈ ±30%. Figures are illustrative.
+  </p>
+</div>
+
+
+<script>
+var LANG=1;
+// Equipment lists for the DSP (protein pulp) plant, $k purchased equipment
+window.P3D=(function(){
+const AREAS = {100:['Chemicals and Treatment A','#2a9d8f'],200:['Treatment B','#3d6fb6'],300:['Heat reclaim and Treatment C','#7d5cba'],400:['Dryer feed, solubles, CIP','#cf8a1c'],
+  500:['Drying','#c8553d'],600:['Product storage and packaging','#4f9a3a'],700:['Future','#8b9096'],900:['Utilities and wastewater','#5b6b7c'],950:['Laboratory','#9a6b4a']};
+return {eq:{"base": 8647, "A2": 8107},areas:{"base": {"100": 1847, "200": 1260, "300": 1340, "400": 500, "500": 1320, "600": 1060, "900": 920, "950": 400}, "A2": {"100": 1812, "200": 1225, "300": 1305, "400": 695, "500": 690, "600": 1060, "900": 920, "950": 400}},AREAS,refreshCard:()=>{}};
+})();
+</script>
+<script>
+const $=id=>document.getElementById(id);
+let MODE='inhouse';
+let BASIS='A2';
+function asm(){
+  return {
+    gal:+$('a_gal').value, sol:+$('a_sol').value/100, dens:+$('a_dens').value, lpg:+$('a_lpg').value,
+    dw:+$('a_dw').value, wk:+$('a_wk').value,
+    baseFiber:+$('a_fiber').value, baseYeast:+$('a_bio').value,
+    dspVar:+$('a_dspvar').value*1e6, dspFix:+$('a_dspfix').value*1e6,
+    spinVar:+$('a_spinvar').value*1e6, spinFix:+$('a_spinfix').value*1e6,
+    contract: MODE==='contract', contractT:+$('a_contract').value*1000,
+    dspFci:+$('a_dspfci').value*1e6, spinFci:+$('a_spinfci').value*1e6, baseFci:(+$('a_dspfci').value + +$('a_spinfci').value)*1e6,
+    capExp:+$('a_capexp').value, fixExp:+$('a_fixexp').value, ycost:+$('a_ycost').value,
+    disc:+$('a_disc').value/100, yrs:+$('a_yrs').value, ship:+$('a_ship').value/100,
+    dcap:Math.max(1,+$('a_dcap').value), gsave:+$('a_gsave').value*1e6
+  };
+}
+function perTruckDry(a){ return a.gal*a.lpg*a.dens*a.sol/1000; }        // t dry / truck
+function trucksToYeast(t,a){ return t*a.dw*a.wk*perTruckDry(a); }        // t/yr dry
+function yeastToTrucks(y,a){ const per=a.dw*a.wk*perTruckDry(a); return per>0? y/per : 0; }
+function crf(r,n){ return r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1); }
+function annuity(r,n){ return (1-Math.pow(1+r,-n))/r; }
+function calc(yeastAmt, fiberP, basis){
+  basis=basis||BASIS;
+  const a=asm();
+  const S=yeastAmt/a.baseYeast;
+  const fiberOut=a.baseFiber*S;
+  const sf=Math.pow(S,a.capExp), ff=Math.pow(S,a.fixExp);
+  const dsf=Math.pow(fiberOut/a.dcap,a.capExp);                 // scale from equipment-list design capacity
+  const dspCap= basis==='study' ? a.dspFci*sf : P3D.eq[basis]*1000*LANG*dsf;
+  const gasSave= basis==='A2' ? a.gsave*fiberOut/a.dcap : 0;     // smaller dryer, less evaporation
+  const dspOp = a.dspVar*S + yeastAmt*a.ycost*(1+a.ship) + a.dspFix*ff - gasSave;
+  let spinCap, spinOp, contractFee=0;
+  if(a.contract){                       // contract manufacturer: no spinning factory
+    spinCap=0; spinOp=0;
+    contractFee=a.contractT*fiberOut;   // $/t fiber × output
+  } else {
+    spinCap=a.spinFci*sf;
+    spinOp=a.spinVar*S + a.spinFix*ff;
+  }
+  const fci=dspCap+spinCap;
+  const caprec=fci*crf(a.disc,a.yrs);
+  const opex=dspOp+spinOp+contractFee;
+  const lev=(opex+caprec)/fiberOut;
+  const rev=fiberP*fiberOut;
+  const ebitda=rev-opex;
+  const years= ebitda>0 ? fci/ebitda : Infinity;   // ROI expressed as years to recover
+  const npv=-fci + ebitda*annuity(a.disc,a.yrs);
+  const irr=solveIRR(fci, ebitda, a.yrs);
+  return {S,fiberOut,dsf,gasSave,fci,dspCap,spinCap,contractFee,opex,caprec,lev,rev,ebitda,years,npv,irr,be:lev};
+}
+function calcTrucks(trucks, fiberP, basis){ return calc(trucksToYeast(trucks,asm()), fiberP, basis); }
+function solveIRR(fci, cf, n){
+  if(cf<=0) return NaN;
+  let lo=-0.9, hi=5;
+  const npvAt=r=> -fci + cf*(1-Math.pow(1+r,-n))/r;
+  if(npvAt(lo)<0) return NaN;
+  for(let i=0;i<80;i++){ const m=(lo+hi)/2; if(npvAt(m)>0){lo=m;}else{hi=m;} }
+  return (lo+hi)/2;
+}
+const fmtM=v=>(v/1e6).toLocaleString('en-US',{maximumFractionDigits:1});
+const fmt0=v=>Math.round(v).toLocaleString('en-US');
+const yrClass=y=> (isFinite(y)&&y<=6)?'pos':(isFinite(y)&&y<=12)?'neu':'neg';
+
+function render(){
+  const a=asm();
+  const trucks=+$('trucks').value, fiberP=+$('fiber').value;
+  const yeast=trucksToYeast(trucks,a);
+  $('yeastN').value=Math.round(yeast);
+  $('tv').textContent=trucks.toFixed(1)+' trucks/day';
+  $('fv').textContent='$'+fmt0(fiberP)+' /t';
+  $('yv').textContent=fmt0(yeast)+' t/yr';
+  $('d_pertruck').textContent=perTruckDry(a).toFixed(2)+' t dry';
+  const r=calc(yeast,fiberP);
+  $('d_scale').textContent=r.S.toFixed(2)+'×';
+  $('d_out').textContent=fmt0(r.fiberOut)+' t/yr';
+  $('berk').textContent='$'+fmt0(r.be)+' /t';
+  $('k_rev').textContent=fmtM(r.rev);
+  $('k_opex').textContent=fmtM(r.opex);
+  $('k_fci').textContent=fmtM(r.fci);
+  $('k_lev').textContent='$'+fmt0(r.lev);
+  const eb=$('k_ebitda'); eb.textContent=fmtM(r.ebitda); eb.className='n '+(r.ebitda>=0?'pos':'neg');
+  const roi=$('k_roi'); roi.textContent=isFinite(r.years)?r.years.toFixed(1)+' yr':'never'; roi.className='n '+yrClass(r.years);
+  const npv=$('k_npv'); npv.textContent=fmtM(r.npv); npv.className='n '+(r.npv>=0?'pos':'neg');
+  const irr=$('k_irr'); irr.textContent=isNaN(r.irr)?'—':(r.irr*100).toFixed(1)+'%'; irr.className='n '+(r.irr>=0.15?'pos':(r.irr>=0?'neu':'neg'));
+
+  const v=$('verdict');
+  const bnote=' ['+BN[BASIS]+' DSP capital'+(BASIS==='study'?'':', Lang '+LANG.toFixed(1))+']';
+  if(r.ebitda<=0){ v.className='verdict b';
+     v.textContent='Loss-making — fiber price is below cash operating cost, so the capital is never recovered.'; }
+  else if(fiberP<r.be){ v.className='verdict w';
+     v.textContent='Above cash cost but below break-even ($'+fmt0(r.be)+'/t at '+trucks.toFixed(1)+' trucks/day). Recovers in '+r.years.toFixed(1)+' yr — longer than the '+asm().yrs+'-yr basis, so NPV is negative.'; }
+  else if(r.years<=4){ v.className='verdict g';
+     v.textContent='Strong return — '+trucks.toFixed(1)+' trucks/day → '+fmt0(r.fiberOut)+' t/yr fiber. Capital recovered in '+r.years.toFixed(1)+' yr on $'+fmtM(r.fci)+'MM, NPV +$'+fmtM(r.npv)+'MM.'; }
+  else{ v.className='verdict g';
+     v.textContent='Profitable — clears break-even. Capital recovered in '+r.years.toFixed(1)+' yr, NPV +$'+fmtM(r.npv)+'MM.'; }
+
+  v.textContent+=bnote;
+  drawChart('chartF', p=>calc(yeast,p).years, 2000,12000, fiberP, calc(yeast,2000).be, '$', 1000,'k');
+  drawChart('chartT', t=>calcTrucks(t,fiberP).years, 1,24, trucks, null, '', 1,'');
+  $('cfee').textContent='Contract fee: $'+fmtM(r.contractFee)+'MM/yr  ($'+(a.contractT/1000).toFixed(2)+'/kg × '+fmt0(r.fiberOut)+' t)';
+  $('lg_dsp').textContent='$'+fmtM(r.dspCap)+'MM';
+  $('lg_spin').textContent='$'+fmtM(r.spinCap)+'MM';
+  $('lg_tot').textContent='$'+fmtM(r.fci)+'MM';
+  drawCapex('chartC', yeast);
+  drawCapCats('chartCat', r.S);
+  drawWool('chartW', fiberP);
+  const rate=+$('a_audusd').value, woolUsd=1873*10*rate;
+  $('wool_cap').innerHTML='Wool (AWEX Eastern Market Indicator): <b>1,873 AUD/100&nbsp;kg</b> on 24 Jul 2026 &asymp; <b>$'+fmt0(woolUsd)+'/t</b> ('+(woolUsd/1000).toFixed(1)+' USD/kg) at '+rate.toFixed(3)+' USD/AUD, +51% YoY (all-time high 2,101 in Sep 2018). Pre-2025 points are indicative annual EMI. Source: <a href="https://tradingeconomics.com/commodity/wool" style="color:#7fd4f5" target="_blank">Trading Economics / AWEX</a>. As a premium natural protein fiber, wool sits well above the ProCell fiber prices modeled here.';
+  buildGrid(trucks,fiberP);
+  renderLink(yeast,fiberP,r);
+}
+const BN={study:'Study model DSP',base:'Original plan',A2:'Alt A2'};
+function renderLink(yeast,fiberP,r){
+  const a=asm();
+  $('lv').innerHTML=LANG.toFixed(1)+'&times;';
+  $('dspnote').textContent= BASIS==='study' ? 'DSP capital from the study model: $'+fmtM(r.dspCap)+'MM at this scale (Lang slider not used).'
+    : BN[BASIS]+' DSP capital: $'+(P3D.eq[BASIS]/1000).toFixed(2)+'MM equipment × '+LANG.toFixed(1)+' × '+r.dsf.toFixed(2)+' scale = $'+fmtM(r.dspCap)+'MM';
+  // side-by-side table
+  const cols=['study','base','A2'].map(k=>[k,calc(yeast,fiberP,k)]);
+  const row=(lab,f,cls)=>'<tr'+(cls?' class="'+cls+'"':'')+'><td class="hd">'+lab+'</td>'+cols.map(([k,x])=>'<td class="'+(k===BASIS?'sel':'')+'">'+f(x,k)+'</td>').join('')+'</tr>';
+  const yr=x=>'<span class="'+yrClass(x.years)+'">'+(isFinite(x.years)?x.years.toFixed(1)+' yr':'never')+'</span>';
+  $('cmp').innerHTML='<tr><th>At '+fmt0(r.fiberOut)+' t/yr fiber, $'+fmt0(fiberP)+'/t</th>'+cols.map(([k])=>'<th>'+BN[k]+'</th>').join('')+'</tr>'
+    +row('DSP capital (MM)',(x,k)=>'$'+fmtM(x.dspCap)+(k==='study'?'':' <span style="color:var(--sub)">@ Lang '+LANG.toFixed(1)+'</span>'))
+    +row('Spinning capital (MM)',x=>'$'+fmtM(x.spinCap))
+    +row('Fixed capital (MM)',x=>'$'+fmtM(x.fci))
+    +row('Annual OpEx (MM/yr)',x=>'$'+fmtM(x.opex)+(x.gasSave?' <span style="color:var(--good)">(−$'+(x.gasSave/1e6).toFixed(2)+' gas)</span>':''))
+    +row('Annual EBITDA (MM/yr)',x=>'<span class="'+(x.ebitda>=0?'pos':'neg')+'">$'+fmtM(x.ebitda)+'</span>')
+    +row('ROI — years to recover',yr,'hl')
+    +row('Project IRR',x=>isNaN(x.irr)?'—':(x.irr*100).toFixed(1)+'%')
+    +row('NPV 20 yr (MM)',x=>'<span class="'+(x.npv>=0?'pos':'neg')+'">$'+fmtM(x.npv)+'</span>')
+    +row('Break-even fiber price',x=>'$'+fmt0(x.be)+' /t');
+  const scale=r.dsf;
+  // area table
+  const areas=P3D.areas;
+  let h='<tr><th>DSP capital by area (MM, at current scale, Lang '+LANG.toFixed(1)+')</th><th>Original plan</th><th>Alt A2</th><th>Change</th></tr>';
+  let t0=0,t1=0;
+  for(const [k,[n,col]] of Object.entries(P3D.AREAS)){ if(k==='700') continue; const v0=(areas.base[k]||0)*1000*LANG*scale, v1=(areas.A2[k]||0)*1000*LANG*scale; t0+=v0; t1+=v1; const d=v1-v0;
+    h+='<tr><td class="hd"><span class="sw3" style="background:'+col+'"></span>'+k+' '+n+'</td><td>$'+(v0/1e6).toFixed(2)+'</td><td>$'+(v1/1e6).toFixed(2)+'</td><td class="'+(Math.abs(d)<500?'':(d<0?'pos':'neg'))+'">'+(Math.abs(d)<500?'—':(d>0?'+':'−')+'$'+Math.abs(d/1e6).toFixed(2))+'</td></tr>'; }
+  h+='<tr><td class="hd"><b>DSP total</b></td><td><b>$'+(t0/1e6).toFixed(2)+'</b></td><td><b>$'+(t1/1e6).toFixed(2)+'</b></td><td class="'+(t1<t0?'pos':'neg')+'"><b>'+(t1<t0?'−':'+')+'$'+Math.abs((t1-t0)/1e6).toFixed(2)+'</b></td></tr>';
+  $('areas3').innerHTML=h;
+  $('catTitle').textContent= BASIS==='study'?'By cost category — total plant (at current scale)':'By plant area — '+BN[BASIS]+' DSP + spinning (at current scale)';
+  $('capNote').innerHTML= BASIS==='study'
+    ? 'DSP capital is split into <b>equipment</b> (installed ISBL + OSBL), <b>infrastructure</b> (other OSBL), <b>buildings / civil</b>, <b>engineering</b> (EPC) and <b>contingency</b> per the study model\'s factored estimate. The fiber-spinning plant is a single lump-sum estimate (Hytönen et al.). All costs scale by the 0.6 power law with plant size; in contract mode the spinning bar drops out.'
+    : 'DSP capital is the '+BN[BASIS]+' equipment list by area × Lang '+LANG.toFixed(1)+', scaled from 2,330 to '+fmt0(r.fiberOut)+' t/yr fiber by (ratio)<sup>'+a.capExp+'</sup> = '+r.dsf.toFixed(2)+'×. The fiber-spinning plant is the study model\'s lump-sum estimate. In contract mode the spinning bar drops out.';
+  P3D.refreshCard();
+}
+
+// draws "years to recover" (lower = better); non-finite segments break, values clamp to a cap
+function drawChart(id, fn, x0,x1, cur, beX, pfx, div, suf){
+  const c=$(id), ctx=c.getContext('2d');
+  const W=c.width,H=c.height, mL=40,mR=12,mT=12,mB=30;
+  ctx.clearRect(0,0,W,H);
+  const step=(x1-x0)/120, CAP=30;
+  const samples=[]; let vmax=0, any=false;
+  for(let p=x0;p<=x1;p+=step){ let v=fn(p); samples.push([p,v]); if(isFinite(v)){ any=true; if(v<CAP) vmax=Math.max(vmax,v);} }
+  let yMax=any? Math.min(CAP, Math.max(15, Math.ceil((vmax*1.1)/5)*5)) : 15;
+  const yMin=0;
+  const X=p=>mL+(p-x0)/(x1-x0)*(W-mL-mR);
+  const Y=v=>mT+(1-(Math.min(v,yMax)-yMin)/(yMax-yMin))*(H-mT-mB);
+  ctx.strokeStyle='#243447'; ctx.fillStyle='#7f93a8'; ctx.font='10px sans-serif'; ctx.lineWidth=1;
+  for(let g=yMin; g<=yMax; g+=5){
+    ctx.beginPath(); ctx.moveTo(mL,Y(g)); ctx.lineTo(W-mR,Y(g)); ctx.stroke();
+    ctx.textAlign='right'; ctx.fillText(g+'y',mL-4,Y(g)+3);
+  }
+  ctx.textAlign='center';
+  for(let k=0;k<=4;k++){ const p=x0+(x1-x0)*k/4; ctx.fillText(pfx+fmt0(p/div)+suf,X(p),H-10); }
+  if(beX!==null && beX>=x0 && beX<=x1){ ctx.strokeStyle='#f4a742'; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(X(beX),mT); ctx.lineTo(X(beX),H-mB); ctx.stroke(); ctx.setLineDash([]); }
+  ctx.strokeStyle='#22d3a6'; ctx.lineWidth=2.2; ctx.beginPath(); let pen=false;
+  for(const [p,v] of samples){ if(!isFinite(v)){ pen=false; continue; } const yy=Y(v); if(!pen){ctx.moveTo(X(p),yy);pen=true;}else ctx.lineTo(X(p),yy);}
+  ctx.stroke();
+  const cv=fn(cur);
+  if(isFinite(cv)){ ctx.fillStyle='#38bdf8'; ctx.beginPath(); ctx.arc(X(cur),Y(cv),4.5,0,7); ctx.fill();
+    ctx.strokeStyle='#38bdf8'; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(X(cur),mT); ctx.lineTo(X(cur),H-mB); ctx.stroke(); ctx.setLineDash([]); }
+}
+
+// DSP & fiber-spinning CapEx (MM USD) vs yeast biomass input (dry t/yr); each = base × S^capExp
+function drawCapex(id, curYeast){
+  const c=$(id), ctx=c.getContext('2d');
+  const W=c.width,H=c.height, mL=52,mR=14,mT=14,mB=38;
+  ctx.clearRect(0,0,W,H);
+  const x0=0, x1=16000, step=(x1-x0)/120;
+  const series=[
+    {color:'#38bdf8', fn:y=>calc(y,0).dspCap/1e6},
+    {color:'#fb923c', fn:y=>calc(y,0).spinCap/1e6},
+    {color:'#8b9bb0', dash:[5,4], fn:y=>calc(y,0).fci/1e6}
+  ];
+  let vmax=0;
+  for(let p=x0;p<=x1;p+=step){ for(const s of series){ const v=s.fn(p); if(isFinite(v)) vmax=Math.max(vmax,v);} }
+  const yMax=Math.max(10, Math.ceil(vmax/20)*20);
+  const X=p=>mL+(p-x0)/(x1-x0)*(W-mL-mR);
+  const Y=v=>mT+(1-v/yMax)*(H-mT-mB);
+  ctx.strokeStyle='#243447'; ctx.fillStyle='#7f93a8'; ctx.font='10px sans-serif'; ctx.lineWidth=1;
+  const gs = yMax>80?40:20;
+  for(let g=0; g<=yMax; g+=gs){
+    ctx.beginPath(); ctx.moveTo(mL,Y(g)); ctx.lineTo(W-mR,Y(g)); ctx.stroke();
+    ctx.textAlign='right'; ctx.fillText('$'+g+'M',mL-6,Y(g)+3);
+  }
+  ctx.textAlign='center';
+  for(let k=0;k<=4;k++){ const p=x0+(x1-x0)*k/4; ctx.fillText(fmt0(p/1000)+'k',X(p),H-24); }
+  ctx.fillText('yeast biomass input (dry t/yr)', (mL+W-mR)/2, H-6);
+  for(const s of series){
+    ctx.strokeStyle=s.color; ctx.lineWidth=2.3; ctx.setLineDash(s.dash||[]);
+    ctx.beginPath(); let first=true;
+    for(let p=x0;p<=x1;p+=step){ const yy=Y(s.fn(p)); if(first){ctx.moveTo(X(p),yy);first=false;}else ctx.lineTo(X(p),yy);}
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  if(curYeast>=x0 && curYeast<=x1){
+    ctx.strokeStyle='#c084fc'; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(X(curYeast),mT); ctx.lineTo(X(curYeast),H-mB); ctx.stroke(); ctx.setLineDash([]);
+    for(const s of series){ const yy=Y(s.fn(curYeast)); ctx.fillStyle=s.color; ctx.beginPath(); ctx.arc(X(curYeast),yy,4,0,7); ctx.fill(); }
+  }
+}
+
+// CapEx cost-category breakdown (base MM USD). DSP is factored; spinning is a lump-sum estimate.
+// [label, DSP base MM, spinning base MM, color]
+const CAPCATS=[
+  ['Equipment (installed)', 14.142, 0, '#38bdf8'],
+  ['Infrastructure (OSBL)', 2.669, 0, '#22d3a6'],
+  ['Buildings / civil', 2.002, 0, '#f4a742'],
+  ['Engineering (EPC)', 5.644, 0, '#c084fc'],
+  ['Contingency', 3.763, 0, '#f0605f'],
+  ['Spinning plant (lump)', 0, 30.992, '#fb923c']
+];
+function drawCapCats(id, S){
+  const a=asm(), sf=Math.pow(S,a.capExp);
+  const c=$(id), ctx=c.getContext('2d'), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  let rows;
+  if(BASIS==='study'){
+    rows=CAPCATS.map(d=>{ const dsp=d[1]*sf; const spin=a.contract?0:d[2]*sf; return [d[0], dsp+spin, d[3]]; }).filter(r=>r[1]>0.001);
+  } else {
+    const fo=a.baseFiber*S, dsf=Math.pow(fo/a.dcap,a.capExp);
+    rows=Object.entries(P3D.AREAS).filter(([k])=>k!=='700').map(([k,[n,col]])=>[k+' '+n.replace('Chemicals and ','Chem + ').replace('Heat reclaim and ','Reclaim + ').replace('Product storage and packaging','Storage + packaging').replace('Utilities and wastewater','Utilities + WW').replace('Dryer feed, solubles, CIP','Dryer feed + CIP'), (P3D.areas[BASIS][k]||0)*LANG*dsf/1000, col])
+      .filter(r=>r[1]>0.0005);
+    if(!a.contract) rows.push(['Spinning plant (lump)', 30.992*sf*(+$('a_spinfci').value/30.992), '#fb923c']);
+  }
+  const total=rows.reduce((s,r)=>s+r[1],0);
+  const mL=150, mR=52, mT=6, mB=18, gap=6, n=rows.length;
+  const bh=(H-mT-mB-gap*(n-1))/n;
+  const vmax=Math.max(...rows.map(r=>r[1]))*1.14;
+  const X=v=>mL+ v/vmax*(W-mL-mR);
+  ctx.font='10.5px sans-serif'; ctx.textBaseline='middle';
+  rows.forEach((r,i)=>{
+    const y=mT+i*(bh+gap);
+    ctx.fillStyle='#c3d0de'; ctx.textAlign='right'; ctx.fillText(r[0], mL-8, y+bh/2);
+    ctx.fillStyle=r[2]; ctx.fillRect(mL, y, Math.max(1,X(r[1])-mL), bh);
+    ctx.fillStyle='#e8eef5'; ctx.textAlign='left'; ctx.fillText('$'+r[1].toFixed(1)+'M', X(r[1])+5, y+bh/2);
+  });
+  ctx.textBaseline='alphabetic'; ctx.textAlign='left'; ctx.fillStyle='#7f93a8';
+  ctx.fillText('Total  $'+total.toFixed(1)+'M', mL, H-4);
+}
+
+// Wool benchmark (AWEX Eastern Market Indicator). Values in AUD/100kg (= AU cents/kg clean).
+// 2026 & ~2025 from Trading Economics (live); earlier years indicative annual EMI.
+const WOOL=[[2018,1860],[2019,1560],[2020,1140],[2021,1380],[2022,1370],[2023,1180],[2024,1130],[2025,1240],[2026,1873]];
+function drawWool(id, fiberP){
+  const rate=+$('a_audusd').value, f=10*rate;          // AUD/100kg -> USD/t
+  const c=$(id), ctx=c.getContext('2d');
+  const W=c.width,H=c.height, mL=52,mR=14,mT=14,mB=34;
+  ctx.clearRect(0,0,W,H);
+  const x0=2018,x1=2026;
+  const cp=+$('a_contract').value*1000;
+  const usd=WOOL.map(d=>d[1]*f);
+  const vmax=Math.max(...usd, fiberP, cp);
+  const yMax=Math.ceil(vmax*1.1/2000)*2000, yMin=0;
+  const X=yr=>mL+(yr-x0)/(x1-x0)*(W-mL-mR);
+  const Y=v=>mT+(1-(v-yMin)/(yMax-yMin))*(H-mT-mB);
+  ctx.strokeStyle='#243447'; ctx.fillStyle='#7f93a8'; ctx.font='10px sans-serif'; ctx.lineWidth=1;
+  for(let g=0; g<=yMax; g+=2000){ ctx.beginPath(); ctx.moveTo(mL,Y(g)); ctx.lineTo(W-mR,Y(g)); ctx.stroke(); ctx.textAlign='right'; ctx.fillText('$'+(g/1000)+'k',mL-6,Y(g)+3); }
+  ctx.textAlign='center'; for(const d of WOOL){ ctx.fillText(d[0],X(d[0]),H-12); }
+  // fiber price reference
+  ctx.strokeStyle='#38bdf8'; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.moveTo(mL,Y(fiberP)); ctx.lineTo(W-mR,Y(fiberP)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#7fd4f5'; ctx.textAlign='left'; ctx.fillText('fiber $'+fmt0(fiberP)+'/t', mL+4, Y(fiberP)-4);
+  // contract toll reference
+  ctx.strokeStyle='#fb923c'; ctx.setLineDash([2,3]); ctx.beginPath(); ctx.moveTo(mL,Y(cp)); ctx.lineTo(W-mR,Y(cp)); ctx.stroke(); ctx.setLineDash([]);
+  // wool line + points
+  ctx.strokeStyle='#e6b800'; ctx.lineWidth=2.6; ctx.beginPath();
+  WOOL.forEach((d,i)=>{ const xx=X(d[0]),yy=Y(d[1]*f); if(i===0)ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy); }); ctx.stroke();
+  ctx.fillStyle='#e6b800'; WOOL.forEach(d=>{ ctx.beginPath(); ctx.arc(X(d[0]),Y(d[1]*f),3.5,0,7); ctx.fill(); });
+  const last=WOOL[WOOL.length-1]; ctx.textAlign='right'; ctx.fillStyle='#f0d060'; ctx.fillText('$'+fmt0(last[1]*f)+'/t', X(last[0])-4, Y(last[1]*f)-6);
+}
+
+function buildGrid(curT,curF){
+  const a=asm();
+  const trucksArr=[4,6,8.6,12,16,20];
+  const fibers=[3000,4000,5000,6000,8000,10000];
+  let h='<tr><th>trucks/day (dry t/yr)</th>'+fibers.map(f=>'<th>$'+fmt0(f)+'</th>').join('')+'</tr>';
+  const nearT=trucksArr.reduce((x,y)=>Math.abs(y-curT)<Math.abs(x-curT)?y:x);
+  const nearF=fibers.reduce((x,y)=>Math.abs(y-curF)<Math.abs(x-curF)?y:x);
+  for(const t of trucksArr){
+    const yy=trucksToYeast(t,a);
+    h+='<tr><td class="hd">'+t+' <span style="color:#6f86a0;font-weight:400">('+fmt0(yy)+')</span></td>';
+    for(const f of fibers){
+      const yr=calcTrucks(t,f).years;
+      let bg = (isFinite(yr)&&yr<=6)?'rgba(55,211,155,.20)':(isFinite(yr)&&yr<=12)?'rgba(244,167,66,.16)':'rgba(240,96,95,.20)';
+      const txt = isFinite(yr)? yr.toFixed(1) : 'loss';
+      const cur=(t===nearT&&f===nearF)?'cellcur':'';
+      h+='<td class="'+cur+'" style="background:'+bg+'">'+txt+'</td>';
+    }
+    h+='</tr>';
+  }
+  $('grid').innerHTML=h;
+}
+
+function link(sl,nm){ const s=$(sl),n=$(nm);
+  s.addEventListener('input',()=>{n.value=s.value;render();});
+  n.addEventListener('input',()=>{s.value=n.value;render();});
+}
+function setMode(m){ MODE=m; $('modeIn').classList.toggle('active',m==='inhouse'); $('modeCo').classList.toggle('active',m==='contract'); $('contractBox').style.display=m==='contract'?'block':'none'; render(); }
+$('modeIn').onclick=()=>setMode('inhouse'); $('modeCo').onclick=()=>setMode('contract');
+link('trucks','trucksN'); link('fiber','fiberN');
+function setLang(v){ v=Math.min(3.2,Math.max(1,Math.round((+v||1)*10)/10)); LANG=v; $('lang').value=v; if(document.activeElement!==$('langN')) $('langN').value=v.toFixed(1); render(); }
+$('lang').addEventListener('input',e=>setLang(e.target.value));
+$('langN').addEventListener('change',e=>{ setLang(e.target.value); $('langN').value=LANG.toFixed(1); });
+document.querySelectorAll('[data-basis]').forEach(b=>b.onclick=()=>{ BASIS=b.dataset.basis; document.querySelectorAll('[data-basis]').forEach(x=>{x.classList.toggle('active',x===b); x.classList.toggle('dspb',x===b);}); render(); });
+$('yeastN').addEventListener('input',()=>{
+  const t=yeastToTrucks(+$('yeastN').value, asm());
+  $('trucks').value=t.toFixed(1); $('trucksN').value=t.toFixed(1); render();
+});
+['a_gal','a_sol','a_dens','a_lpg','a_dw','a_wk','a_fiber','a_bio','a_dspvar','a_dspfix','a_spinvar','a_spinfix','a_dspfci','a_spinfci','a_capexp','a_fixexp','a_ycost','a_disc','a_yrs','a_ship','a_contract','a_audusd','a_dcap','a_gsave'].forEach(id=>$(id).addEventListener('input',render));
+render();
+</script>
+</body>
+</html>
